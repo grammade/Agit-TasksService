@@ -63,5 +63,37 @@ namespace TaskService.Controllers.v1
 
             return Ok(newTask);
         }
+
+        [HttpPut("{TaskId}")]
+        public async Task<ActionResult<Entities.Task>> UpdateTask([FromRoute] int TaskId, [FromBody] UpdateTaskRec model)
+        {
+            var userId = _auth.getAuthorizedUser()?.Id;
+            var task = await _context.Tasks.Where(t => t.TaskId.Equals(TaskId))
+                .ExecuteUpdateAsync(t => t
+                    .SetProperty(p => p.Title, model.Title)
+                    .SetProperty(p => p.Description, model.Description)
+                    .SetProperty(p => p.DueDate, model.DueDate)
+                    .SetProperty(p => p.IsCompleted, model.IsCompleted));
+
+            if (task is 0)
+                return BadRequest("Task not found");
+
+            await _context.SaveChangesAsync();
+            return Ok(await _context.Tasks.FirstOrDefaultAsync(t => t.TaskId.Equals(TaskId)));
+        }
+
+        [HttpDelete("{TaskId}")]
+        public async Task<ActionResult<Entities.Task>> DeleteTask([FromRoute] int TaskId)
+        {
+            var userId = _auth.getAuthorizedUser()?.Id;
+            var task = await _context.Tasks.Where(t => t.TaskId.Equals(TaskId))
+                .ExecuteDeleteAsync();
+
+            if (task is 0)
+                return BadRequest("Task not found");
+
+            await _context.SaveChangesAsync();
+            return Ok($"Task {TaskId} has been deleted");
+        }
     }
 }
